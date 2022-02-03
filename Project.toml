@@ -1,0 +1,4 @@
+[deps]
+BartIO = "8b90e6a2-6e4d-4906-89ae-b5f72ca4a65b"
+MRIReco = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
+RegularizedLeastSquares = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
