@@ -218,8 +218,18 @@ begin
 	push!(plot_vec,heatmap( MP2_sense[:,:,slice,1,1],clims = (-0.5, 0.5), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing));
 	push!(plot_vec,heatmap( MP2_wav[:,:,slice,1,1], clims = (-0.5, 0.5),c=:grays, aspect_ratio = 1,legend = :none , axis=nothing));
 	push!(plot_vec,heatmap( MP2_pics[:,:,slice,1,1],clims = (-0.5, 0.5), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing));
-	plot(plot_vec...,layout = (3,3))
+	
+plot!(size=(1000,1000))
+p_2 = plot(plot_vec...,layout = (3,3))
+
+p_2.subplots[1].attr[:title] = "MRIReco standard"
+p_2.subplots[2].attr[:title] = "MRIReco FISTA"
+p_2.subplots[3].attr[:title] = "BART"
+p_2
 end
+
+# ╔═╡ 7b2d823d-e0ba-4ba6-ab8b-d7a994953fd8
+md"Results of Fista are not enough regularized. Weirdly I can't do better"
 
 # ╔═╡ 12224ef2-c79a-4f26-8512-3751af09a2ce
 md"# Try ADMM ?"
@@ -235,9 +245,9 @@ begin
 	params3[:solver] = "admm"
 	params3[:regularization] = "L1"
 	params3[:sparseTrafo] = "Wavelet"
-	params3[:λ] = 2.e-1
+	params3[:λ] = 3.e-1
 	params3[:iterations] = 30
-	params3[:ρ] = 0.1
+	params3[:ρ] = 0.2
 	params3[:absTol] = 1.e-4
 	params3[:relTol] = 1.e-3
 	params3[:tolInner] = 1.e-2
@@ -270,10 +280,20 @@ p_3
 end
 
 # ╔═╡ 6fdff2ae-c8c9-436c-88d8-fa6786027c82
-md"# Stabilities of results ?"
+md"# Temporary conclusion
+
+## FISTA
+- I have some trouble to find the right parameters for FISTA. I am not able to reach the same image quality as (MRIReci : ADMM / BART)
+- Low stability of the results according to some modification of the FISTA parameters 
+
+## Reconstruction time
+- Reconstruction time takes longer on my laptop with Julia (11s for bart with all the extract command and 70s for Julia)
+- ADMM is particularly long > 500 sec (maybe an issue with my memory/laptop)
+- Maybe MRIReco is slower due to F64 vs F32 for bart ?
+	"
 
 # ╔═╡ Cell order:
-# ╠═5fd0776a-3deb-4c70-8bd3-3323876e4902
+# ╟─5fd0776a-3deb-4c70-8bd3-3323876e4902
 # ╟─af69fdc6-7abc-45f6-b5a9-59e5fd8deacb
 # ╠═ca84f880-8370-11ec-2ed9-1fd70af33535
 # ╟─2903d8af-3b4b-4ad4-b480-037a37817b62
@@ -294,7 +314,8 @@ md"# Stabilities of results ?"
 # ╠═c75e0cb0-6220-4dcd-b8d6-26a6f1a64f28
 # ╠═7eda17f1-63ba-42c9-a888-264fe221c927
 # ╠═2755be10-cdd2-4f45-8799-0ef668bf1199
+# ╟─7b2d823d-e0ba-4ba6-ab8b-d7a994953fd8
 # ╟─12224ef2-c79a-4f26-8512-3751af09a2ce
 # ╠═1bcad3dc-b4ae-488a-95cd-24511dff078a
-# ╠═ddfca8d9-f3c8-4887-84c9-533082b98dad
-# ╟─6fdff2ae-c8c9-436c-88d8-fa6786027c82
+# ╟─ddfca8d9-f3c8-4887-84c9-533082b98dad
+# ╠═6fdff2ae-c8c9-436c-88d8-fa6786027c82
