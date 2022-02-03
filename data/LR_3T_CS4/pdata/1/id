@@ -1,0 +1,12 @@
+##TITLE=Parameter List, ParaVision 6.0.1
+##JCAMPDX=4.24
+##DATATYPE=Parameter Values
+##ORIGIN=Bruker BioSpin MRI GmbH
+##OWNER=sylvain
+$$ 2017-07-14 15:55:02.129 +0200  sylvain@DOJO
+$$ /opt/PV6.0.1/data/sylvain/20170714_154543_AT_7T_CSMP2RAGE_Meta11_1_1/13/pdata/1/id
+$$ process /opt/PV6.0.1/prog/bin/parxserver
+##$DATASET_KEY=( 65 )
+<2.16.756.5.5.100.3611274229.108742.1500040502.133>
+##END=
+$$ File finished by PARX at 2017-07-14 15:55:02.130 +0200
