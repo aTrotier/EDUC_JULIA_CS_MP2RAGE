@@ -62,7 +62,7 @@ version = "0.2.0"
 [[BartIO]]
 deps = ["BufferedStreams", "ConfParser", "Coverage", "Documenter", "PyCall", "Test"]
 git-tree-sha1 = "c42e40fabb1aa6a383f5e711daa4860bc53b6b28"
-repo-rev = "master"
+repo-rev = "03bd6301ac5b78aea2bd79fb10b76284c4e6346f"
 repo-url = "https://github.com/aTrotier/BartIO.jl"
 uuid = "8b90e6a2-6e4d-4906-89ae-b5f72ca4a65b"
 version = "0.2.0"
@@ -705,7 +705,7 @@ version = "2021.1.1+2"
 [[MRIReco]]
 deps = ["Distributed", "Distributions", "FFTW", "FileIO", "Graphics", "HDF5", "ImageUtils", "LightXML", "LinearAlgebra", "LinearOperators", "LowRankApprox", "NFFT", "NIfTI", "Polyester", "ProgressMeter", "Random", "Reexport", "RegularizedLeastSquares", "SparsityOperators", "StatsBase", "ThreadPools", "Unitful", "Wavelets"]
 git-tree-sha1 = "65129cc7205024c01a27915dbc4cac0395aa130f"
-repo-rev = "master"
+repo-rev = "cd8ab86e76f56618ef438f25554428dc81b0eb6f"
 repo-url = "https://github.com/MagneticResonanceImaging/MRIReco.jl.git"
 uuid = "bdf86e05-2d2b-5731-a332-f3fe1f9e047f"
 version = "0.4.1"
@@ -977,7 +977,7 @@ version = "1.2.2"
 [[RegularizedLeastSquares]]
 deps = ["IterativeSolvers", "LinearAlgebra", "ProgressMeter", "Random", "SparseArrays", "SparsityOperators", "VectorizationBase"]
 git-tree-sha1 = "e53da010b83eb08001a6dec36974847f7d514166"
-repo-rev = "master"
+repo-rev = "e22af54f298fd1c705073adc947ed09e653e5820"
 repo-url = "https://github.com/tknopp/RegularizedLeastSquares.jl.git"
 uuid = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
 version = "0.8.2"
