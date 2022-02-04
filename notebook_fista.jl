@@ -199,8 +199,7 @@ begin
 	k_bart = permutedims(k_bart,(1,2,3,5,4));
 	k_bart = reshape(k_bart,sx,sy,sz,numChan,1,numEcho );
 	
-	
-	@time im_pics = bart.pics(kspace = k_bart,sensitivities = sens_spirit,R="W:7:0:0.01",i = 30, S = 1,e = 1);
+	im_pics = bart.pics(kspace = k_bart,sensitivities = sens_spirit,R="W:7:0:0.01",i = 30, S = 1,e = 1);
 	im_pics = permutedims(im_pics,(1,2,3,6,4,5));
 	im_pics = im_pics[:,:,:,:,:,1];
 	
@@ -247,7 +246,7 @@ begin
 	params3[:sparseTrafo] = "Wavelet"
 	params3[:λ] = 3.e-1
 	params3[:iterations] = 30
-	params3[:ρ] = 0.2
+	params3[:ρ] = 0.1
 	params3[:absTol] = 1.e-4
 	params3[:relTol] = 1.e-3
 	params3[:tolInner] = 1.e-2
@@ -292,6 +291,63 @@ md"# Temporary conclusion
 - Maybe MRIReco is slower due to F64 vs F32 for bart ?
 	"
 
+# ╔═╡ 703593a6-ed0d-4b52-b485-497348298a7f
+md"# FISTA over-regularization"
+
+# ╔═╡ ab88b29b-3fe9-41f0-96e5-dc4a1d1c0c5f
+begin
+	λ = [2.0 1.0 0.5 0.1]
+	#λ = [2.0 0.5]
+	
+	I_wav_λ = Vector{Any}(undef,length(λ))
+	MP2_wav_λ = Vector{Any}(undef,length(λ))
+	
+	for i = 1 :length(λ)
+		params2 = Dict{Symbol, Any}()
+		params2[:reco] = "multiCoil"
+		params2[:reconSize] = sensSize
+		params2[:senseMaps] = sens_spirit;
+		
+		params2[:solver] = "fista"
+		params2[:sparseTrafoName] = "Wavelet"
+		params2[:regularization] = "L1"
+		params2[:λ] = λ[i] # 5.e-2
+		params2[:iterations] = 30
+		params2[:normalize_ρ] = true
+		params2[:ρ] = 0.07
+		#params2[:relTol] = 0.1
+		params2[:normalizeReg] = true
+		
+		
+		I_wav_λ[i] = reconstruction(acq, params2);
+		MP2_wav_λ[i] = mp2rage(I_wav_λ[i]);
+	end
+end
+
+# ╔═╡ d17698ab-a402-46f6-a14c-3760d4f76918
+begin
+plot_vec_λ = Any[]
+p = Any[]
+for i =1 : length(λ)
+	for echo = 1:2
+		push!(plot_vec_λ,heatmap( abs.(I_wav_λ[i][:,:,slice,echo,1]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing));
+	end
+	push!(plot_vec_λ,heatmap(MP2_wav_λ[i][:,:,slice,1,1], clims = (-0.5, 0.5),c=:grays, aspect_ratio = 1,legend = :none , axis=nothing));
+	
+end
+
+	p = plot(plot_vec_λ...,layouts=(length(λ),3))
+	plot!(size=(500,500))
+for i =1 : length(λ)
+	tmp = λ[i]
+	plot!(subplot=(i-1)*3+1, ylabel="λ = $tmp")
+end
+	p
+end
+
+# ╔═╡ e07f8e38-b881-4df2-ae53-bc45c928e026
+md("Overregularization generates 0 in images rather than reducing the noise level")
+
 # ╔═╡ Cell order:
 # ╟─5fd0776a-3deb-4c70-8bd3-3323876e4902
 # ╟─af69fdc6-7abc-45f6-b5a9-59e5fd8deacb
@@ -319,3 +375,7 @@ md"# Temporary conclusion
 # ╠═1bcad3dc-b4ae-488a-95cd-24511dff078a
 # ╟─ddfca8d9-f3c8-4887-84c9-533082b98dad
 # ╠═6fdff2ae-c8c9-436c-88d8-fa6786027c82
+# ╠═703593a6-ed0d-4b52-b485-497348298a7f
+# ╠═ab88b29b-3fe9-41f0-96e5-dc4a1d1c0c5f
+# ╟─d17698ab-a402-46f6-a14c-3760d4f76918
+# ╠═e07f8e38-b881-4df2-ae53-bc45c928e026
