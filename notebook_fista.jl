@@ -244,11 +244,11 @@ begin
 	params3[:solver] = "admm"
 	params3[:regularization] = "L1"
 	params3[:sparseTrafo] = "Wavelet"
-	params3[:λ] = 3.e-1
+	params3[:λ] = 1.e-1
 	params3[:iterations] = 30
-	params3[:ρ] = 0.1
-	params3[:absTol] = 1.e-4
-	params3[:relTol] = 1.e-3
+	params3[:ρ] = 1
+	params3[:absTol] = 1.e-2
+	params3[:relTol] = 1.e-2
 	params3[:tolInner] = 1.e-2
 	params3[:senseMaps] = sens_spirit
 	params3[:normalizeReg] = true
@@ -346,7 +346,7 @@ end
 end
 
 # ╔═╡ e07f8e38-b881-4df2-ae53-bc45c928e026
-md("Overregularization generates 0 in images rather than reducing the noise level")
+md"Overregularization generates 0 in images rather than reducing the noise level"
 
 # ╔═╡ Cell order:
 # ╟─5fd0776a-3deb-4c70-8bd3-3323876e4902
@@ -378,4 +378,4 @@ md("Overregularization generates 0 in images rather than reducing the noise leve
 # ╠═703593a6-ed0d-4b52-b485-497348298a7f
 # ╠═ab88b29b-3fe9-41f0-96e5-dc4a1d1c0c5f
 # ╟─d17698ab-a402-46f6-a14c-3760d4f76918
-# ╠═e07f8e38-b881-4df2-ae53-bc45c928e026
+# ╟─e07f8e38-b881-4df2-ae53-bc45c928e026
