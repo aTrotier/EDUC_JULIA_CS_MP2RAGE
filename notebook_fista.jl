@@ -104,12 +104,33 @@ end
 # ╔═╡ 8a459674-94d3-4dd3-b3ea-7b4be4acee98
 md"## Calculate sensitivities"
 
+# ╔═╡ 1e5213aa-c4e1-422e-8600-0c00978a975c
+md"# Perform direct reconstruction with coil combinaison"
+
+# ╔═╡ f20cb182-2c8b-4892-ae00-54601571a06c
+md" # Wavelet reconstruction"
+
+# ╔═╡ d19d8a47-dcf2-4440-94da-c31f92c233de
+T=ComplexF32
+
+# ╔═╡ 0dd4cc7e-ffc5-4939-8d92-1c2948dbef85
+"""
+Documentation : Crop the central area
+"""
+function crop(A::Array{T,4}, s::NTuple{3,Int64}) where {T}
+    nx, ny, nz = size(A)
+    idx_x = div(nx, 2)-div(s[1], 2)+1:div(nx, 2)-div(s[1], 2)+s[1]
+    idx_y = div(ny, 2)-div(s[2], 2)+1:div(ny, 2)-div(s[2], 2)+s[2]
+    idx_z = div(nz, 2)-div(s[3], 2)+1:div(nz, 2)-div(s[3], 2)+s[3]
+    return A[idx_x, idx_y, idx_z,:]
+end
+
 # ╔═╡ bb732ec5-6eff-4baf-8b6e-204cb21bf61d
 begin
-	kspace = extract3DKSpace(acq);
+	kspace = kDataCart(acq);
 	
 	calibSize = parse.(Int,b["CenterMaskSize"]);
-	calibData = crop(kspace[:,:,:,2,:],(calibSize,calibSize,calibSize));
+	calibData = crop(kspace[:,:,:,:,2,1],(calibSize,calibSize,calibSize));
 	
 	kspace = Nothing
 	
@@ -120,15 +141,6 @@ begin
 
 	heatmap( abs.(sens_spirit[:,:,slice,1]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing)
 end
-
-# ╔═╡ 1e5213aa-c4e1-422e-8600-0c00978a975c
-md"# Perform direct reconstruction with coil combinaison"
-
-# ╔═╡ f20cb182-2c8b-4892-ae00-54601571a06c
-md" # Wavelet reconstruction"
-
-# ╔═╡ d19d8a47-dcf2-4440-94da-c31f92c233de
-T=ComplexF32
 
 # ╔═╡ 50323e44-338c-48f0-a2f3-b024571638c2
 begin
@@ -366,6 +378,7 @@ md"Overregularization generates 0 in images rather than reducing the noise level
 # ╟─3fb00049-3b01-49dc-9f60-66a989a2508e
 # ╠═92eef8c2-55d2-4db2-9967-9a381ae5440b
 # ╟─8a459674-94d3-4dd3-b3ea-7b4be4acee98
+# ╠═0dd4cc7e-ffc5-4939-8d92-1c2948dbef85
 # ╠═bb732ec5-6eff-4baf-8b6e-204cb21bf61d
 # ╟─1e5213aa-c4e1-422e-8600-0c00978a975c
 # ╠═d951482f-d45c-4471-9d21-1fbae3bfb678
