@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.17.7
+# v0.19.11
 
 using Markdown
 using InteractiveUtils
@@ -18,11 +18,10 @@ end
 begin
 	# Comparison to BART
 	#Pkg.add(url = "https://github.com/aTrotier/BartIO.jl")
-	using BartIO, PyCall
-	pyhelp = pybuiltin("help")
-	bart = BartIO.initBart("/Users/aurelien/Documents/SOFTWARE/bart","/Users/aurelien/Documents/SOFTWARE/bartpy")
-	
-	pyhelp(bart.pics) # check the terminal where pluto is launched
+	using BartIO
+
+	bart = wrapper_bart("/Users/aurelien/Documents/SOFTWARE/bart")
+
 end
 
 # ╔═╡ 5fd0776a-3deb-4c70-8bd3-3323876e4902
@@ -84,7 +83,10 @@ begin
 end
 
 # ╔═╡ 0c47b8c5-76a4-4128-a525-b7b6f7b2c1fc
-(acq,raw) = acqDataFromMP2RAGE(b); # create an object with function in utils_MP2RAGE.jl
+raw = RawAcquisitionData_MP2RAGE_CS(b); # create an object with function in utils_MP2RAGE.jl
+
+# ╔═╡ 38013fe5-24fb-46f5-8fe2-925d7bdac73a
+acq = AcquisitionData(raw,OffsetBruker = true)
 
 # ╔═╡ 3fb00049-3b01-49dc-9f60-66a989a2508e
 md" Plot the mask"
@@ -122,6 +124,45 @@ end
 # ╔═╡ 1e5213aa-c4e1-422e-8600-0c00978a975c
 md"# Perform direct reconstruction with coil combinaison"
 
+# ╔═╡ f20cb182-2c8b-4892-ae00-54601571a06c
+md" # Wavelet reconstruction"
+
+# ╔═╡ d19d8a47-dcf2-4440-94da-c31f92c233de
+T=ComplexF32
+
+# ╔═╡ 50323e44-338c-48f0-a2f3-b024571638c2
+begin
+	# Then Wavelet
+	params2 = Dict{Symbol, Any}()
+	params2[:reco] = "multiCoil"
+	params2[:reconSize] = sensSize
+	params2[:senseMaps] = T.(sens_spirit);
+	
+	params2[:solver] = "fista"
+	params2[:sparseTrafoName] = "Wavelet"
+	params2[:regularization] = "L1"
+	params2[:λ] = 0.05 # 5.e-2
+	params2[:iterations] = 60
+	params2[:normalize_ρ] = true
+	params2[:ρ] = 0.07
+	#params2[:relTol] = 0.1
+	params2[:normalizeReg] = true
+	
+	
+	@time I_wav = reconstruction(acq, params2);
+
+	#heatmap(MP2_wav[:,:,slice],c=:grays,aspect_ratio = 1,legend = :none , axis=nothing)
+end
+
+# ╔═╡ 53487385-3a18-4a3a-9ad5-c149f62b20e2
+"""
+Documentation mp2rage -> MP2RAGE from TI1/TI2
+"""
+function mp2rage(A)
+    mp2 = real((conj(A[:,:,:,1,1]).*A[:,:,:,2,1]) ./ (abs.(A[:,:,:,1,1]).^2 + abs.(A[:,:,:,2,1]).^2 ));
+    return mp2
+end
+
 # ╔═╡ d951482f-d45c-4471-9d21-1fbae3bfb678
 begin
 	# direct reco
@@ -136,50 +177,14 @@ begin
 	MP2_sense = mp2rage(Isense)
 end
 
+# ╔═╡ 18c04700-8b61-4605-9737-54a55fdc5d36
+typeof(Ireco)
+
 # ╔═╡ 554f16f7-3592-43ab-b90a-d60b90075384
 	heatmap( abs.(MP2_sense[:,:,slice,1,1]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing)
 
-# ╔═╡ f20cb182-2c8b-4892-ae00-54601571a06c
-md" # Wavelet reconstruction"
-
-# ╔═╡ 50323e44-338c-48f0-a2f3-b024571638c2
-begin
-	# Then Wavelet
-	params2 = Dict{Symbol, Any}()
-	params2[:reco] = "multiCoil"
-	params2[:reconSize] = sensSize
-	params2[:senseMaps] = sens_spirit;
-	
-	params2[:solver] = "fista"
-	params2[:sparseTrafoName] = "Wavelet"
-	params2[:regularization] = "L1"
-	params2[:λ] = 0.1 # 5.e-2
-	params2[:iterations] = 30
-	params2[:normalize_ρ] = true
-	params2[:ρ] = 0.07
-	#params2[:relTol] = 0.1
-	params2[:normalizeReg] = true
-	
-	
-	@time I_wav = reconstruction(acq, params2);
+# ╔═╡ 4980c48d-47e8-412e-a6a7-d5df446e2ac4
 	MP2_wav = mp2rage(I_wav);
-	#heatmap(MP2_wav[:,:,slice],c=:grays,aspect_ratio = 1,legend = :none , axis=nothing)
-end
-
-# ╔═╡ 18902e8d-2e7f-44ab-90ec-f3d7a5b71ddc
-md" Best parameters for now
-```julia
-	params2[:solver] = \"fista\"
-	params2[:sparseTrafoName] = \"Wavelet\"
-	params2[:regularization] = \"L1\"
-	params2[:λ] = 0.1 # 5.e-2
-	params2[:iterations] = 30
-	params2[:normalize_ρ] = true
-	params2[:ρ] = 0.07
-	#params2[:relTol] = 0.1
-	params2[:normalizeReg] = true
-```
-"
 
 # ╔═╡ cbf7f8eb-b4de-42d8-bf38-ef767d5e1157
 begin
@@ -192,14 +197,16 @@ end
 # ╔═╡ 060cc6cf-7a15-4a20-9635-ff7aaed5f8d9
 md"# Comparison to BART"
 
+# ╔═╡ a24b008f-be7c-4220-8468-b3bb930b18d7
+begin
+		k_bart = kDataCart(acq)
+		k_bart = permutedims(k_bart,(1,2,3,4,6,5))
+		size(k_bart)
+end
+
 # ╔═╡ 7eda17f1-63ba-42c9-a888-264fe221c927
 begin
-	k_bart = extract3DKSpace(acq);
-	sx,sy,sz,numEcho,numChan = size(k_bart)
-	k_bart = permutedims(k_bart,(1,2,3,5,4));
-	k_bart = reshape(k_bart,sx,sy,sz,numChan,1,numEcho );
-	
-	im_pics = bart.pics(kspace = k_bart,sensitivities = sens_spirit,R="W:7:0:0.01",i = 30, S = 1,e = 1);
+	im_pics = bart(1,"pics -e -S -i 30 -R W:7:0:0.01",k_bart,T.(sens_spirit));
 	im_pics = permutedims(im_pics,(1,2,3,6,4,5));
 	im_pics = im_pics[:,:,:,:,:,1];
 	
@@ -244,13 +251,13 @@ begin
 	params3[:solver] = "admm"
 	params3[:regularization] = "L1"
 	params3[:sparseTrafo] = "Wavelet"
-	params3[:λ] = 1.e-1
-	params3[:iterations] = 30
-	params3[:ρ] = 1
-	params3[:absTol] = 1.e-2
-	params3[:relTol] = 1.e-2
-	params3[:tolInner] = 1.e-2
-	params3[:senseMaps] = sens_spirit
+	params3[:λ] = 0.05
+	params3[:iterations] = 60
+	params3[:ρ] = (2)
+	params3[:absTol] = (1.e-2)
+	params3[:relTol] = (1.e-2)
+	params3[:tolInner] = (1.e-2)
+	params3[:senseMaps] = T.(sens_spirit)
 	params3[:normalizeReg] = true
 
 	@time I_admm = reconstruction(acq, params3);
@@ -306,7 +313,7 @@ begin
 		params2 = Dict{Symbol, Any}()
 		params2[:reco] = "multiCoil"
 		params2[:reconSize] = sensSize
-		params2[:senseMaps] = sens_spirit;
+		params2[:senseMaps] = T.(sens_spirit);
 		
 		params2[:solver] = "fista"
 		params2[:sparseTrafoName] = "Wavelet"
@@ -355,19 +362,24 @@ md"Overregularization generates 0 in images rather than reducing the noise level
 # ╟─2903d8af-3b4b-4ad4-b480-037a37817b62
 # ╠═30e21633-d8d4-49f1-9fa6-4c922a43d222
 # ╠═0c47b8c5-76a4-4128-a525-b7b6f7b2c1fc
+# ╠═38013fe5-24fb-46f5-8fe2-925d7bdac73a
 # ╟─3fb00049-3b01-49dc-9f60-66a989a2508e
 # ╠═92eef8c2-55d2-4db2-9967-9a381ae5440b
 # ╟─8a459674-94d3-4dd3-b3ea-7b4be4acee98
 # ╠═bb732ec5-6eff-4baf-8b6e-204cb21bf61d
 # ╟─1e5213aa-c4e1-422e-8600-0c00978a975c
 # ╠═d951482f-d45c-4471-9d21-1fbae3bfb678
+# ╠═18c04700-8b61-4605-9737-54a55fdc5d36
 # ╠═554f16f7-3592-43ab-b90a-d60b90075384
 # ╟─f20cb182-2c8b-4892-ae00-54601571a06c
+# ╠═d19d8a47-dcf2-4440-94da-c31f92c233de
 # ╠═50323e44-338c-48f0-a2f3-b024571638c2
-# ╟─18902e8d-2e7f-44ab-90ec-f3d7a5b71ddc
+# ╠═53487385-3a18-4a3a-9ad5-c149f62b20e2
+# ╠═4980c48d-47e8-412e-a6a7-d5df446e2ac4
 # ╠═cbf7f8eb-b4de-42d8-bf38-ef767d5e1157
 # ╟─060cc6cf-7a15-4a20-9635-ff7aaed5f8d9
 # ╠═c75e0cb0-6220-4dcd-b8d6-26a6f1a64f28
+# ╠═a24b008f-be7c-4220-8468-b3bb930b18d7
 # ╠═7eda17f1-63ba-42c9-a888-264fe221c927
 # ╠═2755be10-cdd2-4f45-8799-0ef668bf1199
 # ╟─7b2d823d-e0ba-4ba6-ab8b-d7a994953fd8
