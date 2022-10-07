@@ -24,6 +24,9 @@ begin
 
 end
 
+# ╔═╡ 2966ef40-8226-4c85-a354-97dd030359ba
+using RegularizedLeastSquares: FISTA
+
 # ╔═╡ 5fd0776a-3deb-4c70-8bd3-3323876e4902
 html"""<style>
 /*              screen size more than:                     and  less than:                     */
@@ -153,11 +156,10 @@ begin
 	params2[:solver] = "fista"
 	params2[:sparseTrafoName] = "Wavelet"
 	params2[:regularization] = "L1"
-	params2[:λ] = 0.05 # 5.e-2
-	params2[:iterations] = 60
+	params2[:λ] = 0.03# 5.e-2
+	params2[:iterations] = 160
 	params2[:normalize_ρ] = true
-	params2[:ρ] = 0.07
-	#params2[:relTol] = 0.1
+	params2[:ρ] = 0.0045
 	params2[:normalizeReg] = true
 	
 	
@@ -263,12 +265,9 @@ begin
 	params3[:solver] = "admm"
 	params3[:regularization] = "L1"
 	params3[:sparseTrafo] = "Wavelet"
-	params3[:λ] = 0.05
+	params3[:λ] = 0.1
 	params3[:iterations] = 60
 	params3[:ρ] = (2)
-	params3[:absTol] = (1.e-2)
-	params3[:relTol] = (1.e-2)
-	params3[:tolInner] = (1.e-2)
 	params3[:senseMaps] = T.(sens_spirit)
 	params3[:normalizeReg] = true
 
@@ -367,6 +366,106 @@ end
 # ╔═╡ e07f8e38-b881-4df2-ae53-bc45c928e026
 md"Overregularization generates 0 in images rather than reducing the noise level"
 
+# ╔═╡ a23836d6-6ef8-4970-bb1d-ec5ec5e63d49
+md"# try to change the fista iteration"
+
+# ╔═╡ 6bee02b6-dba8-430a-b22b-60a599739391
+function iterate(solver::FISTA, iteration::Int=0)
+	@info "CUSTOM FISTA VERSION"
+  # momentum / Nesterov step
+  # this implementation mimics BART, saving memory by first swapping x and xᵒˡᵈ before calculating x + α * (x - xᵒˡᵈ)
+  if iteration ==0
+	  tmp = solver.xᵒˡᵈ
+	  solver.xᵒˡᵈ = solver.x
+	  solver.x = tmp # swap x and xᵒˡᵈ
+	  solver.x .*= ((1 - solver.tᵒˡᵈ)/solver.t) # here we calculate -α * xᵒˡᵈ, where xᵒˡᵈ is now stored in x
+	  solver.x .+= ((solver.tᵒˡᵈ-1)/solver.t + 1) .* (solver.xᵒˡᵈ) # add (α+1)*x, where x is now stored in xᵒˡᵈ
+	
+	  # calculate residuum and do gradient step
+	  # solver.x .-= solver.ρ .* (solver.AᴴA * solver.x .- solver.x₀)
+	  mul!(solver.res, solver.AᴴA, solver.x)
+	  solver.res .-= solver.x₀
+	  solver.x .-= solver.ρ .* solver.res
+		
+	  if done(solver, iteration) return nothing end
+	
+	  solver.rel_res_norm = norm(solver.res) / solver.norm_x₀
+	  solver.verbose && println("Iteration $iteration; rel. residual = $(solver.rel_res_norm)")
+  end
+  # the two lines below are equivalent to the ones above and non-allocating, but require the 5-argument mul! function to implemented for AᴴA, i.e. if AᴴA is LinearOperator, it requires LinearOperators.jl v2
+  # mul!(solver.x, solver.AᴴA, solver.xᵒˡᵈ, -solver.ρ, 1)
+  # solver.x .+= solver.ρ .* solver.x₀
+
+  # proximal map
+  solver.reg.prox!(solver.x, solver.regFac*solver.ρ*solver.reg.λ; solver.reg.params...)
+
+  # predictor-corrector update
+  solver.tᵒˡᵈ = solver.t
+  solver.t = (1 + sqrt(1 + 4 * solver.tᵒˡᵈ^2)) / 2
+
+  # return the residual-norm as item and iteration number as state
+	  tmp = solver.xᵒˡᵈ
+  solver.xᵒˡᵈ = solver.x
+  solver.x = tmp # swap x and xᵒˡᵈ
+  solver.x .*= ((1 - solver.tᵒˡᵈ)/solver.t) # here we calculate -α * xᵒˡᵈ, where xᵒˡᵈ is now stored in x
+  solver.x .+= ((solver.tᵒˡᵈ-1)/solver.t + 1) .* (solver.xᵒˡᵈ) # add (α+1)*x, where x is now stored in xᵒˡᵈ
+
+  # calculate residuum and do gradient step
+  # solver.x .-= solver.ρ .* (solver.AᴴA * solver.x .- solver.x₀)
+  mul!(solver.res, solver.AᴴA, solver.x)
+  solver.res .-= solver.x₀
+  solver.x .-= solver.ρ .* solver.res
+  return solver, iteration+1
+end
+
+# ╔═╡ 3face58d-1c92-4fdd-8a19-8b198a0e1483
+begin
+	I_wav_λ2 = Vector{Any}(undef,length(λ))
+	MP2_wav_λ2 = Vector{Any}(undef,length(λ))
+	
+	for i = 1 :length(λ)
+		params2 = Dict{Symbol, Any}()
+		params2[:reco] = "multiCoil"
+		params2[:reconSize] = sensSize
+		params2[:senseMaps] = T.(sens_spirit);
+		
+		params2[:solver] = "fista"
+		params2[:sparseTrafoName] = "Wavelet"
+		params2[:regularization] = "L1"
+		params2[:λ] = λ[i] # 5.e-2
+		params2[:iterations] = 30
+		params2[:normalize_ρ] = true
+		params2[:ρ] = 0.07
+		#params2[:relTol] = 0.1
+		params2[:normalizeReg] = true
+		
+		
+		I_wav_λ2[i] = reconstruction(acq, params2);
+		MP2_wav_λ2[i] = mp2rage(I_wav_λ[i]);
+	end
+end
+
+# ╔═╡ ab8a7848-5b7e-4faf-8dad-1e4ecf2462c4
+begin
+plot_vec_λ2 = Any[]
+p2 = Any[]
+for i =1 : length(λ)
+	for echo = 1:2
+		push!(plot_vec_λ2,heatmap( abs.(I_wav_λ2[i][:,:,slice,echo,1]), c=:grays, aspect_ratio = 1,legend = :none , axis=nothing));
+	end
+	push!(plot_vec_λ2,heatmap(MP2_wav_λ2[i][:,:,slice,1,1], clims = (-0.5, 0.5),c=:grays, aspect_ratio = 1,legend = :none , axis=nothing));
+	
+end
+
+	p2 = plot(plot_vec_λ2...,layouts=(length(λ),3))
+	plot!(size=(500,500))
+for i =1 : length(λ)
+	tmp = λ[i]
+	plot!(subplot=(i-1)*3+1, ylabel="λ = $tmp")
+end
+	p2
+end
+
 # ╔═╡ Cell order:
 # ╟─5fd0776a-3deb-4c70-8bd3-3323876e4902
 # ╟─af69fdc6-7abc-45f6-b5a9-59e5fd8deacb
@@ -404,3 +503,8 @@ md"Overregularization generates 0 in images rather than reducing the noise level
 # ╠═ab88b29b-3fe9-41f0-96e5-dc4a1d1c0c5f
 # ╟─d17698ab-a402-46f6-a14c-3760d4f76918
 # ╟─e07f8e38-b881-4df2-ae53-bc45c928e026
+# ╟─a23836d6-6ef8-4970-bb1d-ec5ec5e63d49
+# ╠═2966ef40-8226-4c85-a354-97dd030359ba
+# ╠═6bee02b6-dba8-430a-b22b-60a599739391
+# ╠═3face58d-1c92-4fdd-8a19-8b198a0e1483
+# ╠═ab8a7848-5b7e-4faf-8dad-1e4ecf2462c4
